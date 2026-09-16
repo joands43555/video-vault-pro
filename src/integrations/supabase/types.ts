@@ -14,16 +14,337 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      access_events: {
+        Row: {
+          action: string
+          created_at: string
+          exercise_id: string | null
+          id: number
+          ip: unknown
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          exercise_id?: string | null
+          id?: number
+          ip?: unknown
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          exercise_id?: string | null
+          id?: number
+          ip?: unknown
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      access_links: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          telegram_id: number
+          token_hash: string
+          used_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          telegram_id: number
+          token_hash: string
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          telegram_id?: number
+          token_hash?: string
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      entitlements: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          granted_at: string
+          id: string
+          plan: Database["public"]["Enums"]["access_plan"]
+          source: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          plan: Database["public"]["Enums"]["access_plan"]
+          source?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          id?: string
+          plan?: Database["public"]["Enums"]["access_plan"]
+          source?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      exercises: {
+        Row: {
+          created_at: string
+          difficulty: string | null
+          duration_seconds: number | null
+          equipment: string | null
+          id: string
+          is_published: boolean
+          muscle_group: string | null
+          slug: string
+          storage_path: string
+          tags: string[]
+          thumb_path: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty?: string | null
+          duration_seconds?: number | null
+          equipment?: string | null
+          id?: string
+          is_published?: boolean
+          muscle_group?: string | null
+          slug: string
+          storage_path: string
+          tags?: string[]
+          thumb_path?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string | null
+          duration_seconds?: number | null
+          equipment?: string | null
+          id?: string
+          is_published?: boolean
+          muscle_group?: string | null
+          slug?: string
+          storage_path?: string
+          tags?: string[]
+          thumb_path?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          kind: string
+          last_error: string | null
+          payload: Json
+          run_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          kind: string
+          last_error?: string | null
+          payload?: Json
+          run_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          last_error?: string | null
+          payload?: Json
+          run_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          plan: Database["public"]["Enums"]["access_plan"]
+          provider: string
+          provider_capture_id: string | null
+          provider_order_id: string
+          raw: Json | null
+          status: string
+          telegram_id: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          plan: Database["public"]["Enums"]["access_plan"]
+          provider?: string
+          provider_capture_id?: string | null
+          provider_order_id: string
+          raw?: Json | null
+          status?: string
+          telegram_id?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          plan?: Database["public"]["Enums"]["access_plan"]
+          provider?: string
+          provider_capture_id?: string | null
+          provider_order_id?: string
+          raw?: Json | null
+          status?: string
+          telegram_id?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          blocked: boolean
+          created_at: string
+          display_name: string | null
+          id: string
+          telegram_id: number | null
+          telegram_username: string | null
+        }
+        Insert: {
+          blocked?: boolean
+          created_at?: string
+          display_name?: string | null
+          id: string
+          telegram_id?: number | null
+          telegram_username?: string | null
+        }
+        Update: {
+          blocked?: boolean
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          telegram_id?: number | null
+          telegram_username?: string | null
+        }
+        Relationships: []
+      }
+      telegram_updates: {
+        Row: {
+          created_at: string
+          payload: Json
+          processed_at: string | null
+          update_id: number
+        }
+        Insert: {
+          created_at?: string
+          payload: Json
+          processed_at?: string | null
+          update_id: number
+        }
+        Update: {
+          created_at?: string
+          payload?: Json
+          processed_at?: string | null
+          update_id?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_jobs: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          id: string
+          kind: string
+          last_error: string | null
+          payload: Json
+          run_at: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      current_plan: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["access_plan"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      access_plan: "view" | "download"
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +471,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_plan: ["view", "download"],
+      app_role: ["admin", "user"],
+    },
   },
 } as const
