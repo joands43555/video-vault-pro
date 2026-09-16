@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest, getRequestHeader } from "@tanstack/react-start/server";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -8,6 +8,7 @@ const listInput = z.object({
   search: z.string().max(80).optional(),
   muscle: z.string().max(60).optional(),
   equipment: z.string().max(60).optional(),
+  routineId: z.string().uuid().optional(),
   page: z.number().int().min(0).max(200).default(0),
 });
 
@@ -27,12 +28,28 @@ export const listExercises = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const pageSize = 48;
     const from = data.page * pageSize;
+
+    let ids: string[] | null = null;
+    if (data.routineId) {
+      const { data: items, error } = await context.supabase
+        .from("routine_exercises")
+        .select("exercise_id")
+        .eq("routine_id", data.routineId)
+        .order("position");
+      if (error) throw new Error(error.message);
+      ids = (items ?? []).map((row) => row.exercise_id);
+      if (ids.length === 0) {
+        return { items: [] as ExerciseCard[], total: 0, page: data.page, pageSize };
+      }
+    }
+
     let query = context.supabase
       .from("exercises")
       .select("id, slug, title, muscle_group, equipment, difficulty", { count: "exact" })
       .order("title")
       .range(from, from + pageSize - 1);
 
+    if (ids) query = query.in("id", ids);
     if (data.search) query = query.ilike("title", `%${data.search}%`);
     if (data.muscle) query = query.eq("muscle_group", data.muscle);
     if (data.equipment) query = query.eq("equipment", data.equipment);
@@ -69,27 +86,44 @@ export const listFilters = createServerFn({ method: "GET" })
     };
   });
 
+/** Ready-made combined routines, e.g. "Pecho y tríceps". */
+export const listRoutines = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("routines")
+      .select("id, slug, title, description, muscle_focus, level")
+      .eq("is_published", true)
+      .order("position")
+      .order("title");
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
 /** What the signed-in user is allowed to do. */
 export const getMyAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { getActivePlan } = await import("./library.server");
-    const plan = await getActivePlan(context.userId);
+    const { getAccessState, FULL_ACCESS_PRICE } = await import("./library.server");
+    const state = await getAccessState(context.userId);
     const { data: profile } = await context.supabase
       .from("profiles")
       .select("telegram_username, display_name, telegram_id, blocked")
       .eq("id", context.userId)
       .maybeSingle();
     return {
-      plan,
-      canDownload: plan === "download",
+      ...state,
+      price: FULL_ACCESS_PRICE,
       blocked: profile?.blocked ?? false,
       label: profile?.display_name ?? profile?.telegram_username ?? "Miembro",
       watermark: `${profile?.telegram_username ?? profile?.telegram_id ?? "usuario"} · ${context.userId.slice(0, 8)}`,
     };
   });
 
-const idInput = z.object({ id: z.string().uuid() });
+const idInput = z.object({
+  id: z.string().uuid(),
+  sessionId: z.string().max(200).optional(),
+});
 
 /** Short-lived streaming URL. Never returns a permanent file URL. */
 export const getPlaybackUrl = createServerFn({ method: "POST" })
@@ -97,9 +131,14 @@ export const getPlaybackUrl = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const lib = await import("./library.server");
-    const plan = await lib.getActivePlan(context.userId);
-    if (!plan) throw new Error("Tu acceso no está activo.");
+    const state = await lib.getAccessState(context.userId);
+    if (!state.canView) {
+      throw new Error(
+        `Tu prueba gratis terminó. Desbloquea el acceso permanente por $${lib.FULL_ACCESS_PRICE}.`,
+      );
+    }
 
+    await lib.assertActiveSession(context.userId, data.sessionId ?? null);
     await lib.assertWithinRateLimit(context.userId, "stream", 400);
 
     const { data: row, error } = await context.supabase
@@ -121,17 +160,20 @@ export const getPlaybackUrl = createServerFn({ method: "POST" })
     return { url, title: row.title, expiresInSeconds: 120 };
   });
 
-/** Download URL, gated server-side on the $10 plan. */
+/** Download URL, gated server-side on the paid access. */
 export const getDownloadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => idInput.parse(input))
   .handler(async ({ data, context }) => {
     const lib = await import("./library.server");
-    const plan = await lib.getActivePlan(context.userId);
-    if (plan !== "download") {
-      throw new Error("Tu plan sólo permite ver en línea. Mejora al plan de descarga.");
+    const state = await lib.getAccessState(context.userId);
+    if (!state.canDownload) {
+      throw new Error(
+        `La descarga se activa con el acceso completo de $${lib.FULL_ACCESS_PRICE}.`,
+      );
     }
 
+    await lib.assertActiveSession(context.userId, data.sessionId ?? null);
     await lib.assertWithinRateLimit(context.userId, "download", 120);
 
     const { data: row, error } = await context.supabase
@@ -149,7 +191,7 @@ export const getDownloadUrl = createServerFn({ method: "POST" })
       exercise_id: row.id,
       action: "download",
       ip: getRequestHeader("x-forwarded-for") ?? null,
-      user_agent: getRequest().headers.get("user-agent"),
+      user_agent: getRequestHeader("user-agent") ?? null,
     });
     return { url };
   });
