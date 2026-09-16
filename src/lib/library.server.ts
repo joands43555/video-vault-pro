@@ -4,18 +4,23 @@ export const MEDIA_BUCKET = "exercise-media";
 
 export type Plan = "view" | "download";
 
+/** Free trial length, in hours. */
+export const TRIAL_HOURS = 2;
+
 export const PLANS: Record<Plan, { price: string; label: string; description: string }> = {
   view: {
-    price: "2.00",
-    label: "Ver en línea",
-    description: "Acceso completo a la biblioteca en streaming. Sin descarga.",
+    price: "0.00",
+    label: `Prueba gratis (${TRIAL_HOURS} horas)`,
+    description: "Ves toda la biblioteca en línea durante 2 horas. Sin descargas.",
   },
   download: {
     price: "10.00",
-    label: "Ver y descargar",
-    description: "Acceso completo más descarga de todos los archivos.",
+    label: "Acceso completo",
+    description: "Pago único: acceso permanente en línea y descarga de todos los archivos.",
   },
 };
+
+export const FULL_ACCESS_PRICE = PLANS.download.price;
 
 export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
