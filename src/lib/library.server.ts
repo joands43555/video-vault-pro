@@ -100,3 +100,127 @@ export async function enqueueJob(kind: string, payload: Record<string, unknown>)
   const db = await admin();
   await db.from("jobs").insert({ kind, payload });
 }
+
+/* ----------------------------- Free trial ------------------------------ */
+
+export type Trial = { telegram_id: number; expires_at: string; user_id: string | null };
+
+/** Starts the 2-hour trial the first time a Telegram user runs /start. */
+export async function startTrial(telegramId: number): Promise<Trial> {
+  const db = await admin();
+  const { data: existing } = await db
+    .from("trials")
+    .select("telegram_id, expires_at, user_id")
+    .eq("telegram_id", telegramId)
+    .maybeSingle();
+  if (existing) return existing as Trial;
+
+  const expires = new Date(Date.now() + TRIAL_HOURS * 60 * 60 * 1000).toISOString();
+  const { data, error } = await db
+    .from("trials")
+    .insert({ telegram_id: telegramId, expires_at: expires })
+    .select("telegram_id, expires_at, user_id")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Trial;
+}
+
+/**
+ * Mirrors the trial into an entitlement so every access check goes through
+ * current_plan(). Paid users are left alone.
+ */
+export async function syncTrialEntitlement(userId: string, telegramId: number) {
+  const db = await admin();
+  await db.from("trials").update({ user_id: userId }).eq("telegram_id", telegramId);
+
+  const { data: paid } = await db
+    .from("entitlements")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("plan", "download")
+    .eq("status", "active")
+    .maybeSingle();
+  if (paid) return;
+
+  const { data: trial } = await db
+    .from("trials")
+    .select("expires_at")
+    .eq("telegram_id", telegramId)
+    .maybeSingle();
+  if (!trial) return;
+
+  const { data: already } = await db
+    .from("entitlements")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("plan", "view")
+    .eq("source", "trial")
+    .maybeSingle();
+
+  if (already) {
+    await db.from("entitlements").update({ expires_at: trial.expires_at }).eq("id", already.id);
+  } else {
+    await db.from("entitlements").insert({
+      user_id: userId,
+      plan: "view",
+      source: "trial",
+      expires_at: trial.expires_at,
+    });
+  }
+}
+
+export type AccessState = {
+  plan: Plan | null;
+  canView: boolean;
+  canDownload: boolean;
+  needsPayment: boolean;
+  trialEndsAt: string | null;
+};
+
+/** Single source of truth for what a signed-in user may do right now. */
+export async function getAccessState(userId: string): Promise<AccessState> {
+  const db = await admin();
+  const plan = await getActivePlan(userId);
+
+  const { data: trial } = await db
+    .from("trials")
+    .select("expires_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return {
+    plan,
+    canView: plan !== null,
+    canDownload: plan === "download",
+    needsPayment: plan !== "download",
+    trialEndsAt: plan === "download" ? null : (trial?.expires_at ?? null),
+  };
+}
+
+/* --------------------------- Single session ---------------------------- */
+
+/** Registers the device that just signed in; older sessions stop working. */
+export async function claimSession(userId: string): Promise<string> {
+  const db = await admin();
+  const sessionId = newToken();
+  await db
+    .from("profiles")
+    .update({ active_session_id: sessionId, active_session_at: new Date().toISOString() })
+    .eq("id", userId);
+  return sessionId;
+}
+
+/** Throws when the caller's device is no longer the active one. */
+export async function assertActiveSession(userId: string, sessionId?: string | null) {
+  const db = await admin();
+  const { data } = await db
+    .from("profiles")
+    .select("active_session_id")
+    .eq("id", userId)
+    .maybeSingle();
+  const active = data?.active_session_id ?? null;
+  if (!active) return;
+  if (sessionId !== active) {
+    throw new Error("Tu cuenta se abrió en otro dispositivo. Pide un enlace nuevo en el bot.");
+  }
+}
