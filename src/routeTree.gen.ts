@@ -10,6 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AccesoRouteImport } from './routes/acceso'
+import { Route as PagoCanceladoRouteImport } from './routes/pago-cancelado'
+import { Route as PagoListoRouteImport } from './routes/pago-listo'
+import { Route as PagoProblemaRouteImport } from './routes/pago-problema'
+import { Route as AuthenticatedBibliotecaRouteImport } from './routes/_authenticated/biblioteca'
 import { Route as ApiPublicJobsRunRouteImport } from './routes/api/public/jobs/run'
 import { Route as ApiPublicPaypalReturnRouteImport } from './routes/api/public/paypal/return'
 import { Route as ApiPublicPaypalWebhookRouteImport } from './routes/api/public/paypal/webhook'
@@ -19,6 +25,35 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccesoRoute = AccesoRouteImport.update({
+  id: '/acceso',
+  path: '/acceso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagoCanceladoRoute = PagoCanceladoRouteImport.update({
+  id: '/pago-cancelado',
+  path: '/pago-cancelado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagoListoRoute = PagoListoRouteImport.update({
+  id: '/pago-listo',
+  path: '/pago-listo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagoProblemaRoute = PagoProblemaRouteImport.update({
+  id: '/pago-problema',
+  path: '/pago-problema',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedBibliotecaRoute = AuthenticatedBibliotecaRouteImport.update({
+  id: '/biblioteca',
+  path: '/biblioteca',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiPublicJobsRunRoute = ApiPublicJobsRunRouteImport.update({
   id: '/api/public/jobs/run',
@@ -44,6 +79,11 @@ const ApiPublicTelegramWebhookRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acceso': typeof AccesoRoute
+  '/pago-cancelado': typeof PagoCanceladoRoute
+  '/pago-listo': typeof PagoListoRoute
+  '/pago-problema': typeof PagoProblemaRoute
+  '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/api/public/jobs/run': typeof ApiPublicJobsRunRoute
   '/api/public/paypal/return': typeof ApiPublicPaypalReturnRoute
   '/api/public/paypal/webhook': typeof ApiPublicPaypalWebhookRoute
@@ -51,6 +91,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acceso': typeof AccesoRoute
+  '/pago-cancelado': typeof PagoCanceladoRoute
+  '/pago-listo': typeof PagoListoRoute
+  '/pago-problema': typeof PagoProblemaRoute
+  '/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/api/public/jobs/run': typeof ApiPublicJobsRunRoute
   '/api/public/paypal/return': typeof ApiPublicPaypalReturnRoute
   '/api/public/paypal/webhook': typeof ApiPublicPaypalWebhookRoute
@@ -59,6 +104,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/acceso': typeof AccesoRoute
+  '/pago-cancelado': typeof PagoCanceladoRoute
+  '/pago-listo': typeof PagoListoRoute
+  '/pago-problema': typeof PagoProblemaRoute
+  '/_authenticated/biblioteca': typeof AuthenticatedBibliotecaRoute
   '/api/public/jobs/run': typeof ApiPublicJobsRunRoute
   '/api/public/paypal/return': typeof ApiPublicPaypalReturnRoute
   '/api/public/paypal/webhook': typeof ApiPublicPaypalWebhookRoute
@@ -68,6 +119,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/acceso'
+    | '/pago-cancelado'
+    | '/pago-listo'
+    | '/pago-problema'
+    | '/biblioteca'
     | '/api/public/jobs/run'
     | '/api/public/paypal/return'
     | '/api/public/paypal/webhook'
@@ -75,6 +131,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/acceso'
+    | '/pago-cancelado'
+    | '/pago-listo'
+    | '/pago-problema'
+    | '/biblioteca'
     | '/api/public/jobs/run'
     | '/api/public/paypal/return'
     | '/api/public/paypal/webhook'
@@ -82,6 +143,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
+    | '/acceso'
+    | '/pago-cancelado'
+    | '/pago-listo'
+    | '/pago-problema'
+    | '/_authenticated/biblioteca'
     | '/api/public/jobs/run'
     | '/api/public/paypal/return'
     | '/api/public/paypal/webhook'
@@ -90,6 +157,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AccesoRoute: typeof AccesoRoute
+  PagoCanceladoRoute: typeof PagoCanceladoRoute
+  PagoListoRoute: typeof PagoListoRoute
+  PagoProblemaRoute: typeof PagoProblemaRoute
   ApiPublicJobsRunRoute: typeof ApiPublicJobsRunRoute
   ApiPublicPaypalReturnRoute: typeof ApiPublicPaypalReturnRoute
   ApiPublicPaypalWebhookRoute: typeof ApiPublicPaypalWebhookRoute
@@ -104,6 +176,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acceso': {
+      id: '/acceso'
+      path: '/acceso'
+      fullPath: '/acceso'
+      preLoaderRoute: typeof AccesoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pago-cancelado': {
+      id: '/pago-cancelado'
+      path: '/pago-cancelado'
+      fullPath: '/pago-cancelado'
+      preLoaderRoute: typeof PagoCanceladoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pago-listo': {
+      id: '/pago-listo'
+      path: '/pago-listo'
+      fullPath: '/pago-listo'
+      preLoaderRoute: typeof PagoListoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pago-problema': {
+      id: '/pago-problema'
+      path: '/pago-problema'
+      fullPath: '/pago-problema'
+      preLoaderRoute: typeof PagoProblemaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/biblioteca': {
+      id: '/_authenticated/biblioteca'
+      path: '/biblioteca'
+      fullPath: '/biblioteca'
+      preLoaderRoute: typeof AuthenticatedBibliotecaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/jobs/run': {
       id: '/api/public/jobs/run'
@@ -136,8 +250,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBibliotecaRoute: typeof AuthenticatedBibliotecaRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBibliotecaRoute: AuthenticatedBibliotecaRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AccesoRoute: AccesoRoute,
+  PagoCanceladoRoute: PagoCanceladoRoute,
+  PagoListoRoute: PagoListoRoute,
+  PagoProblemaRoute: PagoProblemaRoute,
   ApiPublicJobsRunRoute: ApiPublicJobsRunRoute,
   ApiPublicPaypalReturnRoute: ApiPublicPaypalReturnRoute,
   ApiPublicPaypalWebhookRoute: ApiPublicPaypalWebhookRoute,
