@@ -1,4 +1,4 @@
-import { PLANS, type Plan } from "./library.server";
+import { PLANS, TRIAL_HOURS, type Plan, startTrial } from "./library.server";
 import { issueAccessLink } from "./fulfillment.server";
 import { answerCallbackQuery, editMessageText, sendMessage } from "./telegram.server";
 
@@ -62,24 +62,33 @@ async function activePlanFor(telegramId: number): Promise<Plan | null> {
   return (payment?.plan as Plan | undefined) ?? null;
 }
 
-const menu = {
+/** True once the user has a paid plan OR an unexpired trial — even before they've
+ * ever logged into the web app (trials are keyed by telegram_id, not user_id yet). */
+async function hasAccess(telegramId: number): Promise<boolean> {
+  const plan = await activePlanFor(telegramId);
+  if (plan) return true;
+  const db = await admin();
+  const { data: trial } = await db
+    .from("trials")
+    .select("expires_at")
+    .eq("telegram_id", telegramId)
+    .maybeSingle();
+  return !!trial && new Date(trial.expires_at) > new Date();
+}
+
+const upsellMenu = {
   inline_keyboard: [
-    [{ text: `👀 ${PLANS.view.label} — $${PLANS.view.price}`, callback_data: "plan_view" }],
     [
       {
-        text: `⬇️ ${PLANS.download.label} — $${PLANS.download.price}`,
+        text: `⭐ ${PLANS.download.label} — $${PLANS.download.price}`,
         callback_data: "plan_download",
       },
     ],
-    [{ text: "📚 Ya pagué, abrir mi biblioteca", callback_data: "open_library" }],
   ],
 };
 
-const welcome =
-  "🏋️ *Biblioteca de Ejercicios*\n\n" +
-  "Más de 1700 ejercicios en video, con buscador por músculo y equipo.\n\n" +
-  `👀 *${PLANS.view.label} — $${PLANS.view.price}*\n${PLANS.view.description}\n\n` +
-  `⬇️ *${PLANS.download.label} — $${PLANS.download.price}*\n${PLANS.download.description}\n\n` +
+const upsellText =
+  `⭐ *${PLANS.download.label} — $${PLANS.download.price}*\n${PLANS.download.description}\n\n` +
   "💳 Pago seguro con PayPal. Acceso inmediato al confirmar.";
 
 export async function handleUpdate(update: Update) {
@@ -89,18 +98,19 @@ export async function handleUpdate(update: Update) {
     await rememberUser(update.message.from);
 
     if (text.startsWith("/start")) {
-      await sendMessage(chatId, welcome, menu);
+      await startTrial(chatId);
+      await deliverLibrary(chatId);
     } else if (text.startsWith("/biblioteca") || text.startsWith("/acceso")) {
       await deliverLibrary(chatId);
     } else if (text.startsWith("/planes")) {
-      await sendMessage(chatId, welcome, menu);
+      await sendMessage(chatId, upsellText, upsellMenu);
     } else if (text.startsWith("/ayuda")) {
       await sendMessage(
         chatId,
-        "Comandos:\n/start — ver los planes\n/biblioteca — abrir tu biblioteca\n/planes — precios\n\nSi algo falla, escribe aquí y te respondemos.",
+        "Comandos:\n/start — activa tu prueba gratis y abre la biblioteca\n/biblioteca — vuelve a abrir tu biblioteca\n/planes — acceso completo con descarga\n\nSi algo falla, escribe aquí y te respondemos.",
       );
     } else {
-      await sendMessage(chatId, "Usa /start para ver los planes o /biblioteca si ya pagaste.");
+      await sendMessage(chatId, "Usa /start para entrar a la biblioteca.");
     }
     return;
   }
@@ -117,8 +127,8 @@ export async function handleUpdate(update: Update) {
       return;
     }
 
-    if (cb.data === "plan_view" || cb.data === "plan_download") {
-      const plan: Plan = cb.data === "plan_download" ? "download" : "view";
+    if (cb.data === "plan_download") {
+      const plan: Plan = "download";
       try {
         const { createOrder } = await import("./paypal.server");
         const { approvalUrl } = await createOrder(chatId, plan);
@@ -144,20 +154,25 @@ export async function handleUpdate(update: Update) {
 }
 
 async function deliverLibrary(chatId: number) {
-  const plan = await activePlanFor(chatId);
-  if (!plan) {
-    await sendMessage(
-      chatId,
-      "Todavía no tienes acceso activo. Elige un plan para entrar 👇",
-      menu,
-    );
+  const ok = await hasAccess(chatId);
+  if (!ok) {
+    await sendMessage(chatId, "Usa /start para activar tu prueba gratis.");
     return;
   }
   const link = await issueAccessLink(chatId);
+  const plan = await activePlanFor(chatId);
+  const status = plan === "download"
+    ? "✅ Tienes acceso completo (ver y descargar)."
+    : `🎁 Prueba gratis activa (${TRIAL_HOURS} horas desde tu primer /start), solo ver.`;
   await sendMessage(
     chatId,
-    `📚 *Tu acceso está activo* (${PLANS[plan].label})\n\n` +
+    `📚 *Tu biblioteca está lista*\n\n${status}\n\n` +
       "Este botón te abre la biblioteca ya conectado. Es personal, de un solo uso y vence en 30 minutos.",
-    { inline_keyboard: [[{ text: "📚 Abrir mi biblioteca", url: link }]] },
+    {
+      inline_keyboard: [
+        [{ text: "📚 Abrir mi biblioteca", url: link }],
+        ...(plan === "download" ? [] : [upsellMenu.inline_keyboard[0]]),
+      ],
+    },
   );
 }

@@ -1,25 +1,18 @@
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/telegram";
+const TELEGRAM_API = "https://api.telegram.org";
 
-function keys() {
-  const lovableKey = process.env["LOVABLE_API_KEY"];
-  const connectionKey = process.env["TELEGRAM_API_KEY"];
-  if (!lovableKey) throw new Error("LOVABLE_API_KEY no está configurada");
-  if (!connectionKey) throw new Error("TELEGRAM_API_KEY no está configurada");
-  return { lovableKey, connectionKey };
+function botToken(): string {
+  const token = process.env["BOT_TOKEN"];
+  if (!token) throw new Error("BOT_TOKEN no está configurado");
+  return token;
 }
 
 export async function telegram<T = unknown>(
   method: string,
   body: Record<string, unknown>,
 ): Promise<T> {
-  const { lovableKey, connectionKey } = keys();
-  const response = await fetch(`${GATEWAY_URL}/${method}`, {
+  const response = await fetch(`${TELEGRAM_API}/bot${botToken()}/${method}`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": connectionKey,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
@@ -74,10 +67,13 @@ export function editMessageText(
   });
 }
 
-/** Derives the webhook secret from the connection key so both sides agree. */
+/**
+ * Secret Telegram echoes back on every webhook call (X-Telegram-Bot-Api-Secret-Token),
+ * set once when you register the webhook with setWebhook's secret_token param.
+ * Any random string works — generate one and set it as TELEGRAM_WEBHOOK_SECRET.
+ */
 export async function webhookSecret(): Promise<string> {
-  const connectionKey = process.env["TELEGRAM_API_KEY"] ?? "";
-  const bytes = new TextEncoder().encode(`telegram-webhook:${connectionKey}`);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Buffer.from(digest).toString("base64url");
+  const secret = process.env["TELEGRAM_WEBHOOK_SECRET"];
+  if (!secret) throw new Error("TELEGRAM_WEBHOOK_SECRET no está configurado");
+  return secret;
 }

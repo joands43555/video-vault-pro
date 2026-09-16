@@ -10,7 +10,7 @@ const redeemInput = z.object({ token: z.string().min(20).max(200) });
 export const redeemAccessLink = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => redeemInput.parse(input))
   .handler(async ({ data }) => {
-    const { hashToken } = await import("./library.server");
+    const { hashToken, syncTrialEntitlement } = await import("./library.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const tokenHash = hashToken(data.token);
@@ -63,6 +63,10 @@ export const redeemAccessLink = createServerFn({ method: "POST" })
     if (profile?.blocked) {
       return { ok: false as const, reason: "Esta cuenta está bloqueada." };
     }
+
+    // Mirrors the trial (started by /start, keyed by telegram_id) into a real
+    // entitlement now that we have a user_id. Never touches an already-paid user.
+    await syncTrialEntitlement(userId, link.telegram_id);
 
     // Attach any payment that arrived before the account existed.
     await supabaseAdmin
