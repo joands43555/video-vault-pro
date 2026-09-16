@@ -8,6 +8,13 @@
       "when": 1789580303497,
       "tag": "0000_create_vip_library_core",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789583755187,
+      "tag": "0001_trial_routines_sessions",
+      "breakpoints": true
     }
   ]
 }

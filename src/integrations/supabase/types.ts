@@ -238,6 +238,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_session_at: string | null
+          active_session_id: string | null
           blocked: boolean
           created_at: string
           display_name: string | null
@@ -246,6 +248,8 @@ export type Database = {
           telegram_username: string | null
         }
         Insert: {
+          active_session_at?: string | null
+          active_session_id?: string | null
           blocked?: boolean
           created_at?: string
           display_name?: string | null
@@ -254,12 +258,83 @@ export type Database = {
           telegram_username?: string | null
         }
         Update: {
+          active_session_at?: string | null
+          active_session_id?: string | null
           blocked?: boolean
           created_at?: string
           display_name?: string | null
           id?: string
           telegram_id?: number | null
           telegram_username?: string | null
+        }
+        Relationships: []
+      }
+      routine_exercises: {
+        Row: {
+          exercise_id: string
+          position: number
+          routine_id: string
+        }
+        Insert: {
+          exercise_id: string
+          position?: number
+          routine_id: string
+        }
+        Update: {
+          exercise_id?: string
+          position?: number
+          routine_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_exercises_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_exercises_routine_id_fkey"
+            columns: ["routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routines: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          level: string | null
+          muscle_focus: string | null
+          position: number
+          slug: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          level?: string | null
+          muscle_focus?: string | null
+          position?: number
+          slug: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          level?: string | null
+          muscle_focus?: string | null
+          position?: number
+          slug?: string
+          title?: string
         }
         Relationships: []
       }
@@ -281,6 +356,27 @@ export type Database = {
           payload?: Json
           processed_at?: string | null
           update_id?: number
+        }
+        Relationships: []
+      }
+      trials: {
+        Row: {
+          expires_at: string
+          started_at: string
+          telegram_id: number
+          user_id: string | null
+        }
+        Insert: {
+          expires_at?: string
+          started_at?: string
+          telegram_id: number
+          user_id?: string | null
+        }
+        Update: {
+          expires_at?: string
+          started_at?: string
+          telegram_id?: number
+          user_id?: string | null
         }
         Relationships: []
       }
