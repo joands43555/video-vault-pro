@@ -12,4 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Self-hosted on Render (plain Node), not Lovable Cloud/Cloudflare — build a
+  // standalone Node server instead of the Cloudflare Workers default.
+  nitro: {
+    preset: "node-server",
+  },
 });

@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: biblioteca-ejercicios
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+
+      # --- Supabase (proyecto nuevo y separado) ---
+      # Plano, para el servidor (SSR):
+      - key: SUPABASE_URL
+        value: https://osmmuctuwbgslsbqbcdt.supabase.co
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # Con prefijo VITE_, para el bundle del navegador (Vite las incrusta al compilar).
+      # OJO: la service_role NUNCA lleva prefijo VITE_, o quedaría expuesta al público.
+      - key: VITE_SUPABASE_URL
+        value: https://osmmuctuwbgslsbqbcdt.supabase.co
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+
+      # --- Telegram (bot nuevo, separado del VIP) ---
+      - key: BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        sync: false
+
+      # --- PayPal (mismas credenciales live del bot VIP) ---
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_SECRET
+        sync: false
+      - key: PAYPAL_MODE
+        value: live
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+
+      # --- Cola de trabajos (la comprueba /api/public/jobs/run) ---
+      - key: JOBS_SECRET
+        sync: false
+
+      # URL pública de este servicio (debe coincidir con el "name" de arriba).
+      - key: PUBLIC_APP_URL
+        value: https://biblioteca-ejercicios.onrender.com
+
+cronJobs:
+  - name: run-jobs-queue
+    schedule: "* * * * *"
+    command: >-
+      curl -s -X POST -H "x-jobs-secret: $JOBS_SECRET"
+      https://biblioteca-ejercicios.onrender.com/api/public/jobs/run
+    envVars:
+      - key: JOBS_SECRET
+        sync: false
