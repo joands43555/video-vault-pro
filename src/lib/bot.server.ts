@@ -171,7 +171,7 @@ async function deliverLibrary(chatId: number) {
     {
       inline_keyboard: [
         [{ text: "📚 Abrir mi biblioteca", url: link }],
-        ...(plan === "download" ? [] : [upsellMenu.inline_keyboard[0]]),
+        ...(plan === "download" ? [] : upsellMenu.inline_keyboard),
       ],
     },
   );
