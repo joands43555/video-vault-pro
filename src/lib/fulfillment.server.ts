@@ -49,7 +49,7 @@ export async function fulfillPayment(input: {
     provider_capture_id: input.captureId ?? null,
     telegram_id: input.telegramId,
     plan: input.plan,
-    amount: PLANS[input.plan].price,
+    amount: Number(PLANS[input.plan].price),
     currency: "USD",
     status: "completed",
     raw: (input.raw ?? null) as never,

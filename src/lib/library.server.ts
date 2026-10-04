@@ -98,7 +98,7 @@ export async function assertWithinRateLimit(userId: string, action: string, maxP
 
 export async function enqueueJob(kind: string, payload: Record<string, unknown>) {
   const db = await admin();
-  await db.from("jobs").insert({ kind, payload });
+  await db.from("jobs").insert({ kind, payload: payload as never });
 }
 
 /* ----------------------------- Free trial ------------------------------ */
